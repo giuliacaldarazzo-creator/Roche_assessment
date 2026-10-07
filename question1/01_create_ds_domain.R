@@ -109,8 +109,6 @@ ds <- ds %>%
   
   mutate(
     
-    VISIT = ds_raw$INSTANCE,
-    
     DSDTC = case_when(
       
       !is.na(ds_raw$DSDTCOL) &
