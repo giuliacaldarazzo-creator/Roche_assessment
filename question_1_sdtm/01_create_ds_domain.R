@@ -1,12 +1,14 @@
-#Question 1: Create DS domain: Expected Result
-#DS domain with the following variables: 
+# ==============================================================================
+# Question 1: SDTM DS Dataset Creation
+# File: question_1_sdtm/create_ds_domain.R
+# ==============================================================================
 #STUDYID, DOMAIN, USUBJID, DSSEQ, DSTERM, DSDECOD, DSCAT, VISITNUM, VISIT, 
 #DSDTC,DSSTDTC, DSSTDY
 
 #LOG 
 
 
-log_file <- "question1/ds_log.txt"
+log_file <- "question_1_sdtm/ds_log.txt"
 
 zz <- file(log_file, open = "wt")
 
@@ -21,16 +23,13 @@ sessionInfo()
 library(sdtm.oak)
 library(pharmaverseraw)
 library(pharmaversesdtm)
-
 library(dplyr)
 library(tidyverse)
 
 
-
-
 #use study_ct file-stored into question 1 folder
 
-study_ct <- read_csv("/cloud/project/question1/sdtm_ct.csv")
+study_ct <- read_csv("/cloud/project/question_1_sdtm/sdtm_ct.csv")
 
 #import the necessary raw data
 dm <- pharmaversesdtm::dm
@@ -42,7 +41,8 @@ ds_raw <- ds_raw %>%
     pat_var = "PATNUM",
     raw_src = "ds_raw"
   )
- #map dsterm variable from IT.DSTERM
+
+#map dsterm variable from IT.DSTERM
 
 ds <-
   assign_no_ct(
@@ -249,7 +249,7 @@ ds <- ds %>%
 
 write.csv(
   ds,
-  file = "question1/ds.csv",
+  file = "question_1_sdtm/ds.csv",
   row.names = FALSE,
   na = ""
 )

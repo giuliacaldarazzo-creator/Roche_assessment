@@ -1,0 +1,51 @@
+---
+title: "Roche_assessment"
+output: github_document
+---
+
+# Pharmaverse & Clinical Trial Data Science Assessment
+
+This repository contains the code and deliverables for the Roche PD Data Science Assessment, covering SDTM domain creation, ADaM dataset derivations, and clinical reporting (TLGs) using the Pharmaverse R ecosystem.
+
+***
+
+## Repository Structure
+
+```text
+.
+├── README.md
+├── question_1_sdtm/
+│   └── 01_create_ds_domain.R
+├── question_2_adam/
+│   └── create_adsl.R
+├── question_3_tlg/
+│   ├── 01_create_ae_summary_table.R
+│   ├── 02_create_visualizations.R
+│   ├── ae_summary_table.html
+│   ├── plot1_ae_severity.png
+│   └── plot2_top10_ae.png
+└── question_4_python/
+    └── clinical_assistant.py
+    
+Overview of Solutions
+Question 1: SDTM DS Domain Creation
+Tooling: {sdtm.oak} and {dplyr}
+Script: question_1_sdtm/01_create_ds_domain.R
+Description: Maps raw disposition data (pharmaverseraw::ds_raw) into the SDTM Disposition (DS) domain following SDTMIG v3.4 standard.
+Question 2: ADAM ADSL Dataset Creation
+Tooling: {admiral} and {tidyverse}
+Script: question_2_adam/create_adsl.R
+Description: Derives the subject-level analysis dataset (ADSL) using SDTM domains (DM, VS, EX, DS, AE). Key derived variables include:
+AGEGR9 & AGEGR9N: Age groupings (<18, 18-50, >50)
+TRTSDTM & TRTSTMF: Treatment start datetime and imputation flag
+ITTFL: Intent-To-Treat population flag
+LSTAVLDT: Last known alive date across clinical assessments
+Question 3: TLG - Adverse Events Reporting
+Tooling: {gtsummary}, {gt}, {ggplot2}, {pharmaverseadam}
+Scripts:
+question_3_tlg/01_create_ae_summary_table.R: Generates treatment-emergent adverse event (TEAE) summary table (ae_summary_table.html).
+question_3_tlg/02_create_visualizations.R: Produces AE severity stacked bar chart (plot1_ae_severity.png) and Top 10 AEs plot with 95% Clopper-Pearson CIs (plot2_top10_ae.png).
+🛠 Prerequisites & Installation
+To run the R scripts, install the required packages:
+R
+install.packages(c("admiral", "sdtm.oak", "gtsummary", "gt", "ggplot2", "dplyr", "lubridate", "pharmaverseadam", "pharmaversesdtm"))

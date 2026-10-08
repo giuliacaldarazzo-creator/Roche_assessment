@@ -1,11 +1,13 @@
-#Question 2: Create ADSL domain: Expected Result
-#ADSL domain with the following variables: 
+# ==============================================================================
+# Question 2: ADAM ADSL Dataset Creation
+# File: question_2_adam/create_adsl.R
+# ==============================================================================
 #AGEGR9, AGEGR9N,TRTSDTM, TRTSTMF,ITTFL,LSTAVLDT,TRTSDTM, TRTSTMF
 
-#LOG 
+#create LOG FILE 
 
 
-log_file <- "question2/adsl_log.txt"
+log_file <- "question_2_adam/adsl_log.txt"
 
 zz <- file(log_file, open = "wt")
 
@@ -42,42 +44,21 @@ ae <- pharmaversesdtm::ae
 vs <- pharmaversesdtm::vs
 suppdm <- pharmaversesdtm::suppdm
 
-# ==============================================================================
-# Question 2: ADAM ADSL Dataset Creation
-# File: question_2_adam/create_adsl.R
-# ==============================================================================
 
-library(admiral)
-library(pharmaversesdtm)
-library(dplyr)
-library(lubridate)
-library(stringr)
 
-# ------------------------------------------------------------------------------
-# 1. Caricamento dei dataset SDTM di input
-# ------------------------------------------------------------------------------
-data("dm", package = "pharmaversesdtm")
-data("ds", package = "pharmaversesdtm")
-data("ex", package = "pharmaversesdtm")
-data("ae", package = "pharmaversesdtm")
-data("vs", package = "pharmaversesdtm")
-
-# Conversione dei vuoti ("") in NA per coerenza
+# convert blanck value in NA
 dm <- convert_blanks_to_na(dm)
 ds <- convert_blanks_to_na(ds)
 ex <- convert_blanks_to_na(ex)
 ae <- convert_blanks_to_na(ae)
 vs <- convert_blanks_to_na(vs)
 
-# ------------------------------------------------------------------------------
-# 2. Inizializzazione di ADSL da DM
-# ------------------------------------------------------------------------------
+#select variables from sdtm.dm
 adsl <- dm %>%
   select(STUDYID, USUBJID, SUBJID, RFSTDTC, RFENDTC, ACTARM, ARM, AGE, AGEU, SEX, RACE, ETHNIC)
 
-# ------------------------------------------------------------------------------
-# 3. Derivazione AGEGR9 e AGEGR9N
-# ------------------------------------------------------------------------------
+# Derive AGEGR9 e AGEGR9N
+
 adsl <- adsl %>%
   mutate(
     AGEGR9 = case_when(
@@ -94,25 +75,25 @@ adsl <- adsl %>%
     )
   )
 
-# ------------------------------------------------------------------------------
-# 4. Derivazione ITTFL
-# ------------------------------------------------------------------------------
+
+# Derive ITTFL
+
 adsl <- adsl %>%
   mutate(
     ITTFL = if_else(!is.na(ARM) & str_trim(ARM) != "", "Y", "N")
   )
 
-# ------------------------------------------------------------------------------
-# 5. Derivazione TRTSDTM, TRTSTMF e TRTEDTM (da EX)
-# ------------------------------------------------------------------------------
-# Filtraggio dosi valide da EX: EXDOSE > 0 oppure (EXDOSE == 0 e EXTRT contiene 'PLACEBO')
+
+#  Derive TRTSDTM, TRTSTMF e TRTEDTM (da EX)
+
+
 ex_valid <- ex %>%
   filter(
     (EXDOSE > 0 | (EXDOSE == 0 & str_detect(toupper(EXTRT), "PLACEBO"))) &
       !is.na(EXSTDTC)
   )
 
-# Derivazione TRTSDTM e TRTSTMF (Primo trattamento)
+# Derive TRTSDTM e TRTSTMF 
 adsl <- derive_vars_merged(
   dataset = adsl,
   dataset_add = ex_valid,
@@ -130,7 +111,7 @@ adsl <- derive_vars_merged(
   ) %>%
   select(-EXSTDTC_FIRST)
 
-# Derivazione TRTEDTM (Ultimo trattamento valido)
+# Derive TRTEDTM 
 adsl <- derive_vars_merged(
   dataset = adsl,
   dataset_add = ex_valid,
@@ -148,11 +129,10 @@ adsl <- derive_vars_merged(
   ) %>%
   select(-EXENDTC_LAST)
 
-# ------------------------------------------------------------------------------
-# 6. Derivazione LSTAVLDT (Last Known Alive Date)
-# ------------------------------------------------------------------------------
 
-# (1) Ultima data di Vital Signs completa
+# Derive LSTAVLDT (Last Known Alive Date)
+
+#last date from vital sign
 vs_dates <- vs %>%
   filter((!is.na(VSSTRESN) | !is.na(VSSTRESC)) & !is.na(VSDTC)) %>%
   derive_vars_dt(dtc = VSDTC, new_vars_prefix = "VS") %>%
@@ -160,7 +140,7 @@ vs_dates <- vs %>%
   group_by(STUDYID, USUBJID) %>%
   summarise(LSTDT_VS = max(VSDT, na.rm = TRUE), .groups = "drop")
 
-# (2) Ultima data di inizio Adverse Events completa
+# last date from Adverse Events
 ae_dates <- ae %>%
   filter(!is.na(AESTDTC)) %>%
   derive_vars_dt(dtc = AESTDTC, new_vars_prefix = "AE") %>%
@@ -168,7 +148,7 @@ ae_dates <- ae %>%
   group_by(STUDYID, USUBJID) %>%
   summarise(LSTDT_AE = max(AEDT, na.rm = TRUE), .groups = "drop")
 
-# (3) Ultima data di Disposition completa
+# last date from disposition
 ds_dates <- ds %>%
   filter(!is.na(DSSTDTC)) %>%
   derive_vars_dt(dtc = DSSTDTC, new_vars_prefix = "DS") %>%
@@ -176,7 +156,7 @@ ds_dates <- ds %>%
   group_by(STUDYID, USUBJID) %>%
   summarise(LSTDT_DS = max(DSDT, na.rm = TRUE), .groups = "drop")
 
-# Unione delle date e calcolo del massimo (inclusa la parte data di TRTEDTM)
+# calculate the maximum date
 adsl <- adsl %>%
   left_join(vs_dates, by = c("STUDYID", "USUBJID")) %>%
   left_join(ae_dates, by = c("STUDYID", "USUBJID")) %>%
@@ -185,12 +165,12 @@ adsl <- adsl %>%
     TRTEDT = date(TRTEDTM),
     LSTAVLDT = pmax(LSTDT_VS, LSTDT_AE, LSTDT_DS, TRTEDT, na.rm = TRUE)
   ) %>%
-  # Pulizia variabili temporanee d'appoggio
+
   select(-LSTDT_VS, -LSTDT_AE, -LSTDT_DS, -TRTEDT)
 
 write.csv(
   ds,
-  file = "question2/adsl.csv",
+  file = "question_2_adam/adsl.csv",
   row.names = FALSE,
   na = ""
 )
